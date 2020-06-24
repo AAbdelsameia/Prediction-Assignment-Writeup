@@ -1,0 +1,72 @@
+---
+title: "Machine Learning Course Project Writeup"
+output:
+  html_document: default
+---
+# Overview
+
+This is a build-up of a prediction model to the class of the excersize in the provided data. The data is cleaned up, and then differnt training models are applied. The best fitting is used to predict the output of the test data.
+
+# Loading the Data and the Needed Libraries
+
+```{r}
+library(randomForest)
+library(caret)
+pmltraining <- read.csv("pml-training.csv", na.strings = c("NA", "#DIV/0!", ""))
+pmltesting <- read.csv("pml-testing.csv", na.strings = c("NA", "#DIV/0!", ""))
+```
+# Cleaning the Data
+
+looking for variables that has more than 80% NAs.
+
+```{r}
+summary(colSums(is.na(pmltraining)) >= (nrow(pmltraining) * 0.8))
+remove <- colSums(is.na(pmltraining)) >= (nrow(pmltraining) * 0.8)
+```
+
+Removing NAs
+
+```{r}
+pmltraining <- pmltraining[,!remove]
+```
+
+
+Removing unuseful variables
+
+```{r}
+pmltraining <- pmltraining[,-c(1:7)]
+```
+
+## Partitioning the training Data
+
+```{r}
+inTrain <- createDataPartition(y = pmltraining$classe, p = 0.75, list = FALSE)
+train <- pmltraining[inTrain,]
+test <- pmltraining[-inTrain,]
+```
+
+# Prediction model: Random Forests
+
+```{r cashe = TRUE}
+model <- randomForest(classe ~ ., data = train, method = "calss")
+predictions <- predict(model, test)
+confusionMatrix(predictions, test$classe)
+accuracy <- confusionMatrix(predictions, test$classe)$overall["Accuracy"]
+upper <- confusionMatrix(predictions, test$classe)$overall["AccuracyUpper"]
+lower <- confusionMatrix(predictions, test$classe)$overall["AccuracyLower"]
+```
+
+# Out-of-Sample Error and the Confidence Interval.
+
+the out of sample error is `r (1-accuracy) * 100` which is very low, showing high accuracy of the model. The 95% shows that the lower bound is `r lower` and the lower upper `r upper`. 
+
+# The Testing Data
+
+```{r}
+predict(model, pmltesting)
+```
+
+# Conclusoin
+
+In trying to predict the training class using the pml-training data, randomforests showed a high accuracy in predicting which class the training belonged to with `r accuracy`. It also showed on the pml-testing data set as all the variables were assigned to the correct category. Overall, using Random Forest algorithm, a reliable prediction function was used to predict the class. 
+
